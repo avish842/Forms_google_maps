@@ -8,10 +8,10 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/create" element={<CreateForm />} />
-        <Route path="/fill/:formId" element={<FillForm />} />
-        <Route path="/admin/:formId" element={<AdminPage />} />
+        <Route path="adt1.vercel.app/" element={<Home />} />
+        <Route path="adt1.vercel.app/create" element={<CreateForm />} />
+        <Route path="adt1.vercel.app/fill/:formId" element={<FillForm />} />
+        <Route path="adt1.vercel.app/admin/:formId" element={<AdminPage />} />
       </Routes>
     </Router>
   );
