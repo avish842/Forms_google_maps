@@ -79,7 +79,7 @@ const AdminPage = () => {
             onClick={downloadExcel}
             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center cursor-pointer active:bg-green-700 active:scale-95 transition-all duration-200"
           >
-            <span className="mr-2">📥</span> Download Excel
+            <span className="mr-2">📥</span> Download Responses
           </button>
         )}
       </div>
