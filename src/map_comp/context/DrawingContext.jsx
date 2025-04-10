@@ -12,18 +12,33 @@ export function DrawingProvider({ children }) {
     now: [],
     future: []
   });
-  const [userLocation,setUserLocation] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition((position) => {
-      setUserLocation({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      });
-    });
+    // Start watching the user's position
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        console.log('Updated location:', position.coords.latitude, position.coords.longitude);
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000
+      }
+    );
 
-    console.log('User location:', userLocation);
-  }, [userLocation]); 
+    // Cleanup watcher on unmount
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, []);
 
   
   const overlaysShouldUpdateRef = useRef(false);
