@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { auth, provider, db } from "../firebaseConfig";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
-
 const Home = () => {
   const [user, setUser] = useState(null);
   const [forms, setForms] = useState([]);

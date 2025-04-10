@@ -4,10 +4,19 @@ import { collection, addDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 
+import MapsComp from "../map_comp/MapsComp";
+
 const CreateForm = () => {
   const [title, setTitle] = useState("");
   const [fields, setFields] = useState([]);
   const navigate = useNavigate();
+
+  //add map to the form
+  const[defineArea, setDefineArea] = useState(false);
+  const addMap = () => {
+    setDefineArea(!defineArea);
+    console.log("Define Area :",defineArea);
+  };
 
   // Add a new input field
   const addField = () => {
@@ -124,6 +133,7 @@ const CreateForm = () => {
     <div className="p-5 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Create Form</h1>
       
+      
       <div className="mb-6">
         <label className="block text-gray-700 mb-2">Form Title</label>
         <input 
@@ -189,6 +199,7 @@ const CreateForm = () => {
                   </button>
                 </div>
               )}
+             
               
               <div className="mt-3 text-right">
                 <button 
@@ -206,6 +217,14 @@ const CreateForm = () => {
           <p>No fields added yet. Click "Add Field" to start creating your form.</p>
         </div>
       )}
+        
+
+        {/* maps component */}
+        {defineArea&&(<div className="w-full h-[500px]  block text-gray-700 mb-2">
+          {
+            <MapsComp/>
+          }
+        </div>)}
 
       <div className="flex justify-between">
         <button 
@@ -213,6 +232,13 @@ const CreateForm = () => {
           className="bg-green-600 p-2 text-white rounded-md active:bg-green-700 active:scale-95 transition-all duration-200 cursor-pointer"
         >
           + Add Field
+        </button>
+        <button 
+          onClick={addMap}
+          className="bg-blue-400 p-2 text-white rounded-md active:bg-blue-700 active:scale-95 transition-all duration-200 cursor-pointer"
+          
+        >
+          {!defineArea? "Add Map" : "Remove Map"}
         </button>
         <button 
           onClick={handleSubmit} 
