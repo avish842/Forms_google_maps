@@ -4,12 +4,12 @@ import { collection, addDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { useDrawingContext } from "../map_comp/context/DrawingContext";
-
 import MapsComp from "../map_comp/MapsComp";
 
 const CreateForm = () => {
   const [title, setTitle] = useState("");
   const [fields, setFields] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   
   // Get user location and state from DrawingContext
@@ -19,6 +19,13 @@ const CreateForm = () => {
   const [defineArea, setDefineArea] = useState(false);
   const [area, setArea] = useState(null);
   const [areaSelected, setAreaSelected] = useState(false);
+
+  // Ensure user is logged in
+  useEffect(() => {
+    if (!auth.currentUser) {
+      navigate("/");
+    }
+  }, [navigate]);
 
   const addMap = () => {
     setDefineArea(!defineArea);
@@ -144,6 +151,7 @@ const CreateForm = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const formId = uuidv4();
       
@@ -154,7 +162,7 @@ const CreateForm = () => {
         fields,
         creator: auth.currentUser.uid,
         createdAt: new Date(),
-        requiresLocation: defineArea, // Flag to indicate if location verification is required
+        requiresLocation: defineArea,
       };
       
       // Add area data if defined, making sure to serialize properly
@@ -205,141 +213,262 @@ const CreateForm = () => {
     } catch (error) {
       console.error("Error saving form:", error);
       alert("Failed to save the form. Try again.");
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="p-5 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Create Form</h1>
-      
-      <div className="mb-6">
-        <label className="block text-gray-700 mb-2">Form Title</label>
-        <input 
-          type="text" 
-          value={title} 
-          onChange={(e) => setTitle(e.target.value)} 
-          placeholder="Form Title" 
-          className="border p-2 w-full rounded-md"
-        />
-      </div>
-      
-      {fields.length > 0 ? (
-        <div className="mb-6">
-          <h2 className="text-xl font-medium mb-4">Form Fields</h2>
-          {fields.map((field) => (
-            <div key={field.id} className="border p-4 mb-4 rounded-md bg-gray-50">
-              <div className="flex justify-between mb-2">
-                <input 
-                  type="text" 
-                  value={field.question} 
-                  onChange={(e) => updateFieldQuestion(field.id, e.target.value)} 
-                  placeholder="Question" 
-                  className="border p-2 flex-grow mr-2 rounded-md"
-                />
-                
-                <select 
-                  value={field.type}
-                  onChange={(e) => updateFieldType(field.id, e.target.value)}
-                  className="border p-2 rounded-md min-w-0"
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50 py-8 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="bg-white shadow-md rounded-lg overflow-hidden mb-8">
+          <div className="p-6 border-b border-gray-200 flex items-center">
+            <img src="/logo.svg" alt="FormBuilder Logo" className="h-8 w-8 mr-3" />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Create New Form</h1>
+              <p className="text-gray-600 mt-2">Design your form by adding fields and customizing options</p>
+            </div>
+          </div>
+          
+          {/* Form Title */}
+          <div className="p-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Form Title</label>
+            <input 
+              type="text" 
+              value={title} 
+              onChange={(e) => setTitle(e.target.value)} 
+              placeholder="Enter form title" 
+              className="border border-gray-300 p-3 w-full rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+            />
+          </div>
+        </div>
+        
+        {/* Form Fields */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">Form Fields</h2>
+            <button 
+              onClick={addField} 
+              className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md shadow-sm transition-all duration-200 flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Add Field
+            </button>
+          </div>
+          
+          {fields.length > 0 ? (
+            <div className="space-y-4">
+              {fields.map((field, index) => (
+                <div 
+                  key={field.id} 
+                  className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-200"
                 >
-                  <option value="text">Text</option>
-                  <option value="radio">Radio Buttons</option>
-                  <option value="checkbox">Checkboxes</option>
-                  <option value="select">Dropdown</option>
-                </select>
+                  <div className="p-5 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                    <span className="font-medium text-gray-700">Field {index + 1}</span>
+                    <button 
+                      onClick={() => deleteField(field.id)}
+                      className="text-red-600 hover:text-red-800 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div className="p-5 space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex-grow">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                        <input 
+                          type="text" 
+                          value={field.question} 
+                          onChange={(e) => updateFieldQuestion(field.id, e.target.value)} 
+                          placeholder="Enter your question" 
+                          className="border border-gray-300 p-2 w-full rounded-md focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+                        />
+                      </div>
+                      
+                      <div className="sm:w-1/3">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                        <select 
+                          value={field.type}
+                          onChange={(e) => updateFieldType(field.id, e.target.value)}
+                          className="border border-gray-300 p-2 w-full rounded-md focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+                        >
+                          <option value="text">Text</option>
+                          <option value="radio">Radio Buttons</option>
+                          <option value="checkbox">Checkboxes</option>
+                          <option value="select">Dropdown</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    {/* Options for radio/checkbox/select */}
+                    {(field.type === "radio" || field.type === "checkbox" || field.type === "select") && (
+                      <div className="mt-4 border-t pt-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="block text-sm font-medium text-gray-700">Options</label>
+                          <button 
+                            onClick={() => addOption(field.id)}
+                            className="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded flex items-center"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                            </svg>
+                            Add Option
+                          </button>
+                        </div>
+                        
+                        {field.options.length > 0 ? (
+                          <div className="space-y-2">
+                            {field.options.map((option) => (
+                              <div key={option.id} className="flex items-center">
+                                <input 
+                                  type="text"
+                                  value={option.value}
+                                  onChange={(e) => updateOptionValue(field.id, option.id, e.target.value)}
+                                  placeholder="Option text"
+                                  className="border border-gray-300 p-1.5 flex-grow rounded-md mr-2"
+                                />
+                                <button 
+                                  onClick={() => deleteOption(field.id, option.id)}
+                                  className="bg-red-100 text-red-600 hover:bg-red-200 p-1 rounded-md"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500 italic">
+                            No options added yet. Add options for users to select from.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8 text-center">
+              <div className="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold mb-1">No fields added yet</h3>
+              <p className="text-gray-600 mb-4">Add fields to create your form</p>
+              <button 
+                onClick={addField} 
+                className="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                Add First Field
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {/* Location Restriction */}
+        <div className="mb-8 bg-white shadow-md rounded-lg overflow-hidden">
+          <div className="p-6 flex justify-between items-center border-b border-gray-200">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800">Location Restriction</h2>
+              <p className="text-gray-600 text-sm mt-1">
+                {defineArea 
+                  ? "Users will only be able to submit this form from within the defined area" 
+                  : "Add location restrictions to your form"}
+              </p>
+            </div>
+            <button 
+              onClick={addMap}
+              className={`${
+                defineArea 
+                  ? 'bg-red-500 hover:bg-red-600'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+              } text-white px-4 py-2 rounded-md shadow-sm transition-all duration-200`}
+            >
+              {!defineArea ? "Add Restriction" : "Remove Restriction"}
+            </button>
+          </div>
+          
+          {defineArea && (
+            <div>
+              <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                <span className="text-sm text-gray-600">
+                  {areaSelected 
+                    ? "Area selected successfully!" 
+                    : "Draw and save a region on the map below"}
+                </span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  areaSelected ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {areaSelected ? 'Area Saved' : 'Not Saved'}
+                </span>
               </div>
               
-              {(field.type === "radio" || field.type === "checkbox" || field.type === "select") && (
-                <div className="ml-4 mt-3">
-                  <label className="block text-gray-700 mb-1">Options</label>
-                  {field.options.map((option) => (
-                    <div key={option.id} className="flex items-center mb-2">
-                      <input 
-                        type="text"
-                        value={option.value}
-                        onChange={(e) => updateOptionValue(field.id, option.id, e.target.value)}
-                        placeholder="Option text"
-                        className="border p-1 flex-grow mr-2 rounded-md"
-                      />
-                      <button 
-                        onClick={() => deleteOption(field.id, option.id)}
-                        className="bg-red-500 text-white p-1 px-2 rounded-md"
-                      >
-                        X
-                      </button>
-                    </div>
-                  ))}
-                  <button 
-                    onClick={() => addOption(field.id)}
-                    className="bg-green-500 text-white p-1 px-2 rounded-md text-sm"
-                  >
-                    + Add Option
-                  </button>
+              <div className="p-1 bg-gray-100">
+                <div className="w-full h-[400px] rounded-md overflow-hidden">
+                  <MapsComp />
                 </div>
-              )}
+              </div>
               
-              <div className="mt-3 text-right">
+              <div className="p-4 bg-white flex justify-between items-center">
+                <p className="text-xs text-gray-500">
+                  Draw a shape on the map to restrict form submissions to users within this area.
+                  <br />Only the first shape drawn will be used.
+                </p>
                 <button 
-                  onClick={() => deleteField(field.id)}
-                  className="bg-red-500 text-white py-1 px-3 rounded-md active:bg-red-700 active:scale-95 transition-all duration-200 cursor-pointer"
+                  onClick={saveArea}
+                  className={`px-4 py-2 rounded-md ${
+                    areaSelected 
+                      ? 'bg-green-500 hover:bg-green-600' 
+                      : 'bg-blue-500 hover:bg-blue-600'
+                  } text-white shadow-sm transition-all duration-200`}
                 >
-                  Delete Field
+                  {areaSelected ? 'Update Area' : 'Save Area'}
                 </button>
               </div>
             </div>
-          ))}
+          )}
         </div>
-      ) : (
-        <div className="text-center p-6 bg-gray-100 mb-6 rounded-md">
-          <p>No fields added yet. Click "Add Field" to start creating your form.</p>
-        </div>
-      )}
         
-      {/* Map component with status indicator */}
-      {defineArea && (
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl font-medium">Location Restriction</h2>
-            <div className={`px-3 py-1 rounded-md text-white ${areaSelected ? 'bg-green-500' : 'bg-yellow-500'}`}>
-              {areaSelected ? 'Area Selected' : 'Draw & Save Area'}
-            </div>
-          </div>
-          <div className="w-full h-[500px] block text-gray-700 mb-2 border rounded-md overflow-hidden">
-            <MapsComp/>
-          </div>
-          <p className="text-sm text-gray-600 mb-3">
-            Draw a shape on the map to restrict form submissions to users within this area. 
-            Only the first shape drawn will be used.
-          </p>
+        {/* Create Form Button */}
+        <div className="flex justify-center pb-10">
           <button 
-            onClick={saveArea}
-            className="bg-blue-500 text-white px-4 py-2 rounded-md active:bg-blue-700 active:scale-95 transition-all duration-200 cursor-pointer"
+            onClick={handleSubmit}
+            disabled={isSubmitting} 
+            className={`${
+              isSubmitting 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-yellow-600 hover:bg-yellow-700'
+            } text-white px-8 py-3 rounded-lg shadow-md transition-all duration-200 font-medium text-lg flex items-center`}
           >
-            Save Area
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creating...
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                Create Form
+              </>
+            )}
           </button>
         </div>
-      )}
-
-      <div className="flex justify-between">
-        <button 
-          onClick={addField} 
-          className="bg-green-600 p-2 text-white rounded-md active:bg-green-700 active:scale-95 transition-all duration-200 cursor-pointer"
-        >
-          + Add Field
-        </button>
-        <button 
-          onClick={addMap}
-          className="bg-blue-400 p-2 text-white rounded-md active:bg-blue-700 active:scale-95 transition-all duration-200 cursor-pointer"
-        >
-          {!defineArea ? "Add Location Restriction" : "Remove Location Restriction"}
-        </button>
-        <button 
-          onClick={handleSubmit} 
-          className="bg-yellow-600 p-2 text-white rounded-md active:bg-blue-700 active:scale-95 transition-all duration-200 cursor-pointer"
-          // disabled={fields.length === 0}
-        >
-          Create Form
-        </button>
       </div>
     </div>
   );

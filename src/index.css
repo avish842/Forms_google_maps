@@ -1,1 +1,67 @@
 @import "tailwindcss";
+
+/* Dropdown menu functionality */
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+/* Specific styles for response tables and charts */
+.response-table th {
+  position: relative;
+}
+
+.response-table th::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.response-table th.sort-asc::after {
+  content: '↑';
+}
+
+.response-table th.sort-desc::after {
+  content: '↓';
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Print styles for reports */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    font-size: 12pt;
+    color: #000;
+    background-color: #fff;
+  }
+  
+  .print-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+}
