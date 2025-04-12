@@ -43,6 +43,8 @@ export const DrawingActionKind = {
   UPDATE_OVERLAYS: 'UPDATE_OVERLAYS',
   UNDO: 'UNDO',
   REDO: 'REDO'
+  
+  
 };
 
 /**

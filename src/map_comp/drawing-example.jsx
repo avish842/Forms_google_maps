@@ -29,9 +29,11 @@ const DrawingExample = () => {
       style={{width: '80%', height: '80%'}}
         
         defaultZoom={20}
-        defaultCenter={{lat: 29.9419967, lng: 76.8144186}}
+        defaultCenter={initialCenter}
         gestureHandling={'greedy'}
-        disableDefaultUI={false}
+        disableDefaultUI={true}
+        mapTypeControlStyle={0}
+        mapTypeId="hybrid"
 
       />
       {/* <Marker
@@ -46,6 +48,7 @@ const DrawingExample = () => {
       />
       <Marker
         position={userLocation}
+        draggable={true}
         icon="https://maps.gstatic.com/mapfiles/ms2/micons/yellow-dot.png"
       />
 

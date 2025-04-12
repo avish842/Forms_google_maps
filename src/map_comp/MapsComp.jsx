@@ -15,7 +15,7 @@ const MapsComp = () => {
   return (
     <APIProvider apiKey='AIzaSyD49as3_zk9mFpDLnbXvTkUx7Jp9tZ0PS8'>
         {/* <h1>Welcome to Google maps</h1> */}
-      <DrawingProvider>
+     
         
       <DrawingExample >
 
@@ -23,7 +23,7 @@ const MapsComp = () => {
       <AreaData/>
 
 
-      </DrawingProvider>
+    
     </APIProvider>
   );
 };

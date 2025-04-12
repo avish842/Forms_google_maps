@@ -35,6 +35,7 @@ console.log(state);
   return (
     <div className="drawing-history">
       <button
+        className="undo-redo-button bg-amber-50 "
         onClick={() => dispatch({type: DrawingActionKind.UNDO})}
         disabled={!state.past.length}>
         <svg
@@ -46,6 +47,7 @@ console.log(state);
         </svg>
       </button>
       <button
+        className="undo-redo-button bg-amber-50 "
         onClick={() => dispatch({type: DrawingActionKind.REDO})}
         disabled={!state.future.length}>
         <svg

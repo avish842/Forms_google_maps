@@ -3,10 +3,13 @@ import Home from "./pages/Home";
 import CreateForm from "./pages/CreateForm";
 import FillForm from "./pages/FillForm";
 import AdminPage from "./pages/AdminPage";
+import { DrawingProvider, useDrawingContext } from "./map_comp/context/DrawingContext";
 
 function App() {
   return (
-    <Router>
+
+   <DrawingProvider>
+     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/create" element={<CreateForm />} />
@@ -14,6 +17,7 @@ function App() {
         <Route path="/admin/:formId" element={<AdminPage />} />
       </Routes>
     </Router>
+   </DrawingProvider>
   );
 }
 
