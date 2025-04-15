@@ -32,7 +32,7 @@ export function DrawingProvider({ children }) {
         maximumAge: 0,
         timeout: 5000
       }
-    );
+    );    
 
     // Cleanup watcher on unmount
     return () => {

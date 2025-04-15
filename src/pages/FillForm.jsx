@@ -4,6 +4,7 @@ import { db } from "../firebaseConfig";
 import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import Auth from "../components/Auth";
 import { useDrawingContext } from "../map_comp/context/DrawingContext";
+import MapsCompFill from "../map_comp/MapsCompFill";
 
 const FillForm = () => {
   const { formId } = useParams();
@@ -349,6 +350,7 @@ const FillForm = () => {
                   </p>
                 </div>
               )}
+              
             </div>
           )}
 
@@ -444,6 +446,11 @@ const FillForm = () => {
             </div>
           ))}
         </div>
+       {form?.requiresLocation? ( <div className="p-1 bg-gray-100">
+                <div className="w-full h-[400px] rounded-md overflow-hidden">
+                  <MapsCompFill />
+                </div>
+      </div>): null}
         
         {/* Submit Button */}
         <div className="mt-8 flex items-center justify-center">
@@ -472,6 +479,7 @@ const FillForm = () => {
           </button>
         </div>
       </div>
+      
     </div>
   ) : (
     <Auth onLogin={setUser} />

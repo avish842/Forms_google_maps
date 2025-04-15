@@ -92,10 +92,11 @@ const Home = () => {
       <header className="bg-white shadow-md py-4 px-4 sm:px-6">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-indigo-700 flex items-center">
-            <img src="/logo.svg" alt="FormBuilder Logo" className="h-10 w-10 mr-3" />
+            <img src="/logo.svg" alt="AvishForms Logo" className="h-10 w-10 mr-3" />
             <span className="bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
-              FormBuilder
+              AvishForms 
             </span>
+            <span className="text-xs text-gray-500 ml-[5px] mt-[20px]">By NIT KKR Student</span>
           </h1>
           
           {user && (
@@ -129,7 +130,8 @@ const Home = () => {
                 <img src="/logo.svg" alt="FormBuilder Logo" className="w-24 h-24 mx-auto" />
               </div>
               
-              <h2 className="text-2xl font-bold mb-2 text-gray-800">Welcome to FormBuilder</h2>
+              <h2 className="text-2xl font-bold mb-2 text-gray-800">Welcome to AvishForms</h2>
+              <span className="text-xs text-gray-700 ml-[5px] font-bold" >(By NIT KKR Student)</span>
               <p className="text-gray-600 mb-6">Create custom forms, collect responses, and analyze data with ease.</p>
               
               <button 
