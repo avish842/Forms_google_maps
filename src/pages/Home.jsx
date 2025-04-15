@@ -96,7 +96,7 @@ const Home = () => {
             <span className="bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
               AvishForms 
             </span>
-            <span className="text-xs text-gray-500 ml-[5px] mt-[20px]">By NIT KKR Student</span>
+            <span className="text-xs text-gray-500 ml-[5px] mt-[20px]">By NITian</span>
           </h1>
           
           {user && (
@@ -131,7 +131,7 @@ const Home = () => {
               </div>
               
               <h2 className="text-2xl font-bold mb-2 text-gray-800">Welcome to AvishForms</h2>
-              <span className="text-xs text-gray-700 ml-[5px] font-bold" >(By NIT KKR Student)</span>
+              <span className="text-xs text-gray-700 ml-[5px] font-bold" >(By NITian)</span>
               <p className="text-gray-600 mb-6">Create custom forms, collect responses, and analyze data with ease.</p>
               
               <button 
