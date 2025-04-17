@@ -162,6 +162,7 @@ const CreateForm = () => {
         fields,
         creator: auth.currentUser.uid,
         createdAt: new Date(),
+        closed: false,
         requiresLocation: defineArea,
       };
       

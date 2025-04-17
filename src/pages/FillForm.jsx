@@ -35,6 +35,15 @@ const FillForm = () => {
         if (!querySnapshot.empty) {
           const formData = querySnapshot.docs[0].data();
           console.log("✅ Form found:", formData);
+          
+          // Check if form is closed or inactive immediately
+          if (formData.closed === true || formData.active === false) {
+            console.log("Form is closed or inactive, not allowing submissions");
+            // Still set the form data so we can show the form info in the disabled message
+            setForm(formData);
+            return;
+          }
+          
           setForm(formData);
           
           // Initialize responses object with empty values
@@ -259,6 +268,36 @@ const FillForm = () => {
     }
   };
 
+  // Update the FormDisabledMessage to show the form title
+  const FormDisabledMessage = () => (
+    <div className="min-h-screen bg-gray-50 p-5">
+      <div className="max-w-4xl mx-auto mt-10">
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+          <div className="p-6 bg-red-50 border-b border-red-100">
+            <img src="/logo.svg" alt="FormBuilder Logo" className="w-16 h-16 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-center text-red-800 mb-2">Form Not Available</h2>
+            <p className="text-center text-red-700">
+              {form?.title ? `"${form.title}"` : "This form"} is currently not accepting responses.
+            </p>
+          </div>
+          <div className="p-6 bg-white">
+            <p className="text-gray-600 mb-6 text-center">
+              The form has been closed by the creator. Please contact them for more information.
+            </p>
+            <div className="flex justify-center">
+              <button 
+                onClick={() => navigate("/")}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+              >
+                Back to Home
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -296,194 +335,201 @@ const FillForm = () => {
     );
   }
 
-  return user ? (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50 py-8 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Form Header */}
-        <div className="bg-white shadow-md rounded-lg overflow-hidden mb-6">
-          <div className="p-6 border-b border-gray-200 flex items-center">
-            <img src="/logo.svg" alt="FormBuilder Logo" className="h-8 w-8 mr-3" />
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{form?.title || "Untitled Form"}</h1>
-              <p className="text-gray-600 mt-2 text-sm">
-                Please complete all fields below to submit this form
-              </p>
+  if (user) {
+    // First check if form is inactive or closed and show message
+    if (form && (form.closed === true || form.active === false)) {
+      return <FormDisabledMessage />;
+    }
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50 py-8 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Form Header */}
+          <div className="bg-white shadow-md rounded-lg overflow-hidden mb-6">
+            <div className="p-6 border-b border-gray-200 flex items-center">
+              <img src="/logo.svg" alt="FormBuilder Logo" className="h-8 w-8 mr-3" />
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{form?.title || "Untitled Form"}</h1>
+                <p className="text-gray-600 mt-2 text-sm">
+                  Please complete all fields below to submit this form
+                </p>
+              </div>
+            </div>
+            
+            {/* Location notification if applicable */}
+            {form?.requiresLocation && (
+              <div className={`p-4 border-b ${isWithinArea ? 'bg-green-50' : 'bg-red-50'}`}>
+                <div className="flex items-center">
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isWithinArea ? 'bg-green-100' : 'bg-red-100'}`}>
+                    {isWithinArea ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="ml-4">
+                    <p className={`font-semibold ${isWithinArea ? 'text-green-800' : 'text-red-800'}`}>
+                      {isWithinArea 
+                        ? "You're in the right location!" 
+                        : "You must be in the designated area to submit"}
+                    </p>
+                    <p className={`text-sm ${isWithinArea ? 'text-green-700' : 'text-red-700'}`}>
+                      {isWithinArea 
+                        ? "Your current location meets the requirements for this form" 
+                        : "Please move to the required location before submitting"}
+                    </p>
+                  </div>
+                </div>
+                
+                {!userLocation && (
+                  <div className="mt-3 flex items-center bg-yellow-50 p-3 rounded-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-yellow-800 text-sm">
+                      Location access is required. Please ensure your device's location services are enabled.
+                    </p>
+                  </div>
+                )}
+                
+              </div>
+            )}
+
+            {/* User info */}
+            <div className="bg-gray-50 p-4 border-b">
+              <div className="flex items-center">
+                {user.photoURL && (
+                  <img src={user.photoURL} alt={user.displayName} className="h-8 w-8 rounded-full mr-2" />
+                )}
+                <div>
+                  <p className="text-gray-800 font-medium">{user.displayName}</p>
+                  <p className="text-gray-500 text-sm">{user.email}</p>
+                </div>
+              </div>
             </div>
           </div>
-          
-          {/* Location notification if applicable */}
-          {form?.requiresLocation && (
-            <div className={`p-4 border-b ${isWithinArea ? 'bg-green-50' : 'bg-red-50'}`}>
-              <div className="flex items-center">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isWithinArea ? 'bg-green-100' : 'bg-red-100'}`}>
-                  {isWithinArea ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
+
+          {/* Form Fields */}
+          <div className="space-y-6">
+            {form?.fields?.map((field) => (
+              <div key={field.id} className="bg-white shadow-md rounded-lg overflow-hidden">
+                <div className="p-6">
+                  <label className="block text-lg font-medium text-gray-800 mb-3">
+                    {field.question}
+                  </label>
+                  
+                  {field.type === "text" && (
+                    <input
+                      type="text"
+                      value={responses[field.id] || ""}
+                      onChange={(e) => handleTextChange(field.id, e.target.value)}
+                      placeholder="Your answer"
+                      className="border border-gray-300 p-3 w-full rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    />
+                  )}
+                  
+                  {field.type === "radio" && field.options && field.options.length > 0 && (
+                    <div className="ml-2 space-y-3">
+                      {field.options.map((option) => (
+                        <div key={option.id} className="flex items-center">
+                          <input
+                            type="radio"
+                            id={`${field.id}-${option.id}`}
+                            name={field.id}
+                            value={option.value}
+                            checked={responses[field.id] === option.value}
+                            onChange={(e) => handleRadioChange(field.id, e.target.value)}
+                            className="mr-3 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor={`${field.id}-${option.id}`} className="text-gray-700">
+                            {option.value}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {field.type === "checkbox" && field.options && field.options.length > 0 && (
+                    <div className="ml-2 space-y-3">
+                      {field.options.map((option) => (
+                        <div key={option.id} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`${field.id}-${option.id}`}
+                            value={option.value}
+                            checked={(responses[field.id] || []).includes(option.value)}
+                            onChange={(e) => handleCheckboxChange(field.id, option.value, e.target.checked)}
+                            className="mr-3 h-4 w-4 text-indigo-600 focus:ring-indigo-500 rounded"
+                          />
+                          <label htmlFor={`${field.id}-${option.id}`} className="text-gray-700">
+                            {option.value}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {field.type === "select" && field.options && field.options.length > 0 && (
+                    <select
+                      value={responses[field.id] || ""}
+                      onChange={(e) => handleSelectChange(field.id, e.target.value)}
+                      className="border border-gray-300 p-3 w-full rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    >
+                      <option value="" disabled>Select an option</option>
+                      {field.options.map((option) => (
+                        <option key={option.id} value={option.value}>
+                          {option.value}
+                        </option>
+                      ))}
+                    </select>
                   )}
                 </div>
-                <div className="ml-4">
-                  <p className={`font-semibold ${isWithinArea ? 'text-green-800' : 'text-red-800'}`}>
-                    {isWithinArea 
-                      ? "You're in the right location!" 
-                      : "You must be in the designated area to submit"}
-                  </p>
-                  <p className={`text-sm ${isWithinArea ? 'text-green-700' : 'text-red-700'}`}>
-                    {isWithinArea 
-                      ? "Your current location meets the requirements for this form" 
-                      : "Please move to the required location before submitting"}
-                  </p>
-                </div>
               </div>
-              
-              {!userLocation && (
-                <div className="mt-3 flex items-center bg-yellow-50 p-3 rounded-md">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            ))}
+          </div>
+         {form?.requiresLocation? ( <div className="p-1 bg-gray-100">
+                  <div className="w-full h-[400px] rounded-md overflow-hidden">
+                    <MapsCompFill />
+                  </div>
+        </div>): null}
+          
+          {/* Submit Button */}
+          <div className="mt-8 flex items-center justify-center">
+            <button 
+              onClick={handleSubmit} 
+              disabled={submitLoading || (form?.requiresLocation && !isWithinArea)}
+              className={`px-6 py-3 rounded-md text-white font-medium flex items-center justify-center transition-all ${
+                submitLoading 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : (form?.requiresLocation && !isWithinArea)
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg'
+              }`}
+            >
+              {submitLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <p className="text-yellow-800 text-sm">
-                    Location access is required. Please ensure your device's location services are enabled.
-                  </p>
-                </div>
+                  Processing...
+                </>
+              ) : (
+                'Submit Form'
               )}
-              
-            </div>
-          )}
-
-          {/* User info */}
-          <div className="bg-gray-50 p-4 border-b">
-            <div className="flex items-center">
-              {user.photoURL && (
-                <img src={user.photoURL} alt={user.displayName} className="h-8 w-8 rounded-full mr-2" />
-              )}
-              <div>
-                <p className="text-gray-800 font-medium">{user.displayName}</p>
-                <p className="text-gray-500 text-sm">{user.email}</p>
-              </div>
-            </div>
+            </button>
           </div>
         </div>
-
-        {/* Form Fields */}
-        <div className="space-y-6">
-          {form?.fields?.map((field) => (
-            <div key={field.id} className="bg-white shadow-md rounded-lg overflow-hidden">
-              <div className="p-6">
-                <label className="block text-lg font-medium text-gray-800 mb-3">
-                  {field.question}
-                </label>
-                
-                {field.type === "text" && (
-                  <input
-                    type="text"
-                    value={responses[field.id] || ""}
-                    onChange={(e) => handleTextChange(field.id, e.target.value)}
-                    placeholder="Your answer"
-                    className="border border-gray-300 p-3 w-full rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                  />
-                )}
-                
-                {field.type === "radio" && field.options && field.options.length > 0 && (
-                  <div className="ml-2 space-y-3">
-                    {field.options.map((option) => (
-                      <div key={option.id} className="flex items-center">
-                        <input
-                          type="radio"
-                          id={`${field.id}-${option.id}`}
-                          name={field.id}
-                          value={option.value}
-                          checked={responses[field.id] === option.value}
-                          onChange={(e) => handleRadioChange(field.id, e.target.value)}
-                          className="mr-3 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor={`${field.id}-${option.id}`} className="text-gray-700">
-                          {option.value}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {field.type === "checkbox" && field.options && field.options.length > 0 && (
-                  <div className="ml-2 space-y-3">
-                    {field.options.map((option) => (
-                      <div key={option.id} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id={`${field.id}-${option.id}`}
-                          value={option.value}
-                          checked={(responses[field.id] || []).includes(option.value)}
-                          onChange={(e) => handleCheckboxChange(field.id, option.value, e.target.checked)}
-                          className="mr-3 h-4 w-4 text-indigo-600 focus:ring-indigo-500 rounded"
-                        />
-                        <label htmlFor={`${field.id}-${option.id}`} className="text-gray-700">
-                          {option.value}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {field.type === "select" && field.options && field.options.length > 0 && (
-                  <select
-                    value={responses[field.id] || ""}
-                    onChange={(e) => handleSelectChange(field.id, e.target.value)}
-                    className="border border-gray-300 p-3 w-full rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                  >
-                    <option value="" disabled>Select an option</option>
-                    {field.options.map((option) => (
-                      <option key={option.id} value={option.value}>
-                        {option.value}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-       {form?.requiresLocation? ( <div className="p-1 bg-gray-100">
-                <div className="w-full h-[400px] rounded-md overflow-hidden">
-                  <MapsCompFill />
-                </div>
-      </div>): null}
         
-        {/* Submit Button */}
-        <div className="mt-8 flex items-center justify-center">
-          <button 
-            onClick={handleSubmit} 
-            disabled={submitLoading || (form?.requiresLocation && !isWithinArea)}
-            className={`px-6 py-3 rounded-md text-white font-medium flex items-center justify-center transition-all ${
-              submitLoading 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : (form?.requiresLocation && !isWithinArea)
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg'
-            }`}
-          >
-            {submitLoading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              'Submit Form'
-            )}
-          </button>
-        </div>
       </div>
-      
-    </div>
-  ) : (
-    <Auth onLogin={setUser} />
-  );
+    );
+  } else {
+    return <Auth onLogin={setUser} />;
+  }
 };
 
 export default FillForm;

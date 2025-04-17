@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { db, auth } from "../firebaseConfig";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import * as XLSX from "xlsx";
 
 const AdminPage = () => {
@@ -13,6 +13,10 @@ const AdminPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [expandedResponse, setExpandedResponse] = useState(null);
+  const [formActive, setFormActive] = useState(true);
+  const [formClosed, setFormClosed] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [documentId, setDocumentId] = useState(null);
   
   // Get the current date for display formatting
   const currentDate = new Date().toISOString().split('T')[0];
@@ -26,31 +30,37 @@ const AdminPage = () => {
         const formSnapshot = await getDocs(formQuery);
 
         if (!formSnapshot.empty) {
-          const formData = formSnapshot.docs[0].data();
+          const formDoc = formSnapshot.docs[0];
+          const formData = formDoc.data();
           setForm(formData);
+          setDocumentId(formDoc.id);
+          
+          // Set form status
+          setFormActive(formData.active !== false); // Default to true if not set
+          setFormClosed(formData.closed === true);  // Default to false if not set
+          
+          // 🔹 Fetch responses for the form
+          const responseQuery = query(collection(db, "responses"), where("formId", "==", formId));
+          const responseSnapshot = await getDocs(responseQuery);
+
+          if (!responseSnapshot.empty) {
+            const responsesData = responseSnapshot.docs.map((doc) => {
+              const data = doc.data();
+              return {
+                ...data,
+                // Format date for display
+                formattedDate: data.submittedAt ? 
+                  new Date(data.submittedAt.seconds * 1000).toLocaleString() : 
+                  "Unknown date"
+              };
+            });
+            setResponses(responsesData);
+          } else {
+            console.warn("⚠️ No responses found for this form.");
+          }
         } else {
           console.error("❌ No form found with id:", formId);
           return;
-        }
-
-        // 🔹 Fetch responses for the form
-        const responseQuery = query(collection(db, "responses"), where("formId", "==", formId));
-        const responseSnapshot = await getDocs(responseQuery);
-
-        if (!responseSnapshot.empty) {
-          const responsesData = responseSnapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              ...data,
-              // Format date for display
-              formattedDate: data.submittedAt ? 
-                new Date(data.submittedAt.seconds * 1000).toLocaleString() : 
-                "Unknown date"
-            };
-          });
-          setResponses(responsesData);
-        } else {
-          console.warn("⚠️ No responses found for this form.");
         }
       } catch (error) {
         console.error("❌ Error fetching form or responses:", error);
@@ -268,10 +278,80 @@ const AdminPage = () => {
     );
   };
 
+  // Toggle form active status
+  const toggleFormStatus = async () => {
+    if (!documentId) {
+      alert("Cannot update form: Document ID not found");
+      return;
+    }
+    
+    setUpdating(true);
+    try {
+      const formRef = doc(db, "forms", documentId);
+      const newStatus = !formActive;
+      
+      await updateDoc(formRef, {
+        active: newStatus
+      });
+      
+      setFormActive(newStatus);
+      setForm(prev => ({
+        ...prev,
+        active: newStatus
+      }));
+      
+      alert(`Form ${newStatus ? 'activated' : 'deactivated'} successfully!`);
+    } catch (error) {
+      console.error("Error updating form status:", error);
+      alert("Failed to update form status.");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Close form completely
+  const closeForm = async () => {
+    if (!documentId) {
+      alert("Cannot close form: Document ID not found");
+      return;
+    }
+    
+    if (!confirm("Are you sure you want to permanently close this form?\n\nThis will prevent any new submissions and cannot be undone.")) {
+      return;
+    }
+    
+    setUpdating(true);
+    try {
+      const formRef = doc(db, "forms", documentId);
+      
+      await updateDoc(formRef, {
+        closed: true,
+        active: false,
+        closedAt: new Date()
+      });
+      
+      setFormClosed(true);
+      setFormActive(false);
+      setForm(prev => ({
+        ...prev,
+        closed: true,
+        active: false,
+        closedAt: new Date()
+      }));
+      
+      alert("Form closed successfully!");
+    } catch (error) {
+      console.error("Error closing form:", error);
+      alert("Failed to close form.");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header with back button */}
+        {/* Header with back button and form controls */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
           <div className="mb-4 sm:mb-0">
             <Link 
@@ -292,8 +372,60 @@ const AdminPage = () => {
             </p>
           </div>
           
-          {responses.length > 0 && (
-            <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
+            {form && !formClosed && (
+              <button 
+                onClick={toggleFormStatus}
+                disabled={updating}
+                className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
+                  updating ? 'bg-gray-400 text-white cursor-not-allowed' :
+                  formActive 
+                    ? 'bg-red-500 hover:bg-red-600 text-white' 
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
+              >
+                {updating ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Updating...
+                  </span>
+                ) : formActive ? (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                    </svg>
+                    Disable Form
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Enable Form
+                  </>
+                )}
+              </button>
+            )}
+            
+            {form && !formClosed && (
+              <button 
+                onClick={closeForm}
+                disabled={updating}
+                className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
+                  updating ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+                Close Form
+              </button>
+            )}
+            
+            {responses.length > 0 && (
               <div className="dropdown relative">
                 <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -316,9 +448,49 @@ const AdminPage = () => {
                   </button>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+        
+        {/* Form Status Banner */}
+        {form && formClosed && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4 flex items-center">
+            <div className="mr-3 bg-red-100 rounded-full p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium text-red-800">Form is permanently closed</h3>
+              <p className="text-sm text-red-700">
+                This form has been closed {form.closedAt ? `on ${new Date(form.closedAt.seconds * 1000).toLocaleDateString()}` : ''} 
+                and cannot accept new responses.
+              </p>
+            </div>
+            <div className="ml-4">
+              <button
+                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/fill/${formId}`)}
+                className="text-xs bg-red-100 hover:bg-red-200 text-red-800 py-1 px-2 rounded transition-colors"
+              >
+                Copy Link
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {form && !formClosed && !formActive && (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-md p-4 flex items-center">
+            <div className="mr-3 bg-yellow-100 rounded-full p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-medium text-yellow-800">Form is currently disabled</h3>
+              <p className="text-sm text-yellow-700">Users cannot submit new responses. Enable the form to allow submissions.</p>
+            </div>
+          </div>
+        )}
         
         {/* Response Summary */}
         {getResponseSummary()}
@@ -470,7 +642,7 @@ const AdminPage = () => {
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <div className="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
             <h3 className="text-xl font-semibold mb-2 text-gray-800">No responses yet</h3>
