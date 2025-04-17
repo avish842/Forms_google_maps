@@ -17,6 +17,7 @@ const FillForm = () => {
   const [isWithinArea, setIsWithinArea] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const { userLocation } = useDrawingContext();
+  const [isDomainAllowed, setIsDomainAllowed] = useState(true);
 
   useEffect(() => {
     if (!formId) {
@@ -162,6 +163,24 @@ const FillForm = () => {
     }
   }, []);
 
+  // Check if user's email domain is allowed
+  useEffect(() => {
+    if (form?.restrictByDomain && user?.email && form.allowedDomains) {
+      const emailParts = user.email.split('@');
+      if (emailParts.length === 2) {
+        const userDomain = emailParts[1].toLowerCase();
+        const allowed = form.allowedDomains.some(domain => 
+          userDomain === domain.toLowerCase() || 
+          userDomain.endsWith('.' + domain.toLowerCase())
+        );
+        
+        setIsDomainAllowed(allowed);
+      } else {
+        setIsDomainAllowed(false);
+      }
+    }
+  }, [form, user]);
+
   const handleTextChange = (fieldId, value) => {
     setResponses(prev => ({
       ...prev,
@@ -298,6 +317,28 @@ const FillForm = () => {
     </div>
   );
 
+  // Add a component to display when the user's email domain is not allowed
+  const DomainRestrictedMessage = () => (
+    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+      <div className="flex items-center">
+        <div className="mr-3 bg-yellow-100 rounded-full p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div>
+          <h3 className="font-medium text-yellow-800">Access Restricted</h3>
+          <p className="text-sm text-yellow-700">
+            This form is restricted to specific email domains. Your email ({user?.email}) is not from an allowed domain.
+          </p>
+          <p className="text-sm text-yellow-700 mt-1">
+            Allowed domains: {form?.allowedDomains?.map(domain => `@${domain}`).join(', ')}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -413,6 +454,9 @@ const FillForm = () => {
             </div>
           </div>
 
+          {/* Domain restriction warning if applicable */}
+          {form?.restrictByDomain && !isDomainAllowed && <DomainRestrictedMessage />}
+
           {/* Form Fields */}
           <div className="space-y-6">
             {form?.fields?.map((field) => (
@@ -501,11 +545,13 @@ const FillForm = () => {
           <div className="mt-8 flex items-center justify-center">
             <button 
               onClick={handleSubmit} 
-              disabled={submitLoading || (form?.requiresLocation && !isWithinArea)}
+              disabled={submitLoading || 
+                (form?.requiresLocation && !isWithinArea) || 
+                (form?.restrictByDomain && !isDomainAllowed)}
               className={`px-6 py-3 rounded-md text-white font-medium flex items-center justify-center transition-all ${
                 submitLoading 
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : (form?.requiresLocation && !isWithinArea)
+                  : (form?.requiresLocation && !isWithinArea) || (form?.restrictByDomain && !isDomainAllowed)
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg'
               }`}
@@ -523,6 +569,12 @@ const FillForm = () => {
               )}
             </button>
           </div>
+          
+          {form?.restrictByDomain && !isDomainAllowed && (
+            <p className="text-center text-sm text-red-600 mt-2">
+              You cannot submit this form because your email domain is not allowed.
+            </p>
+          )}
         </div>
         
       </div>

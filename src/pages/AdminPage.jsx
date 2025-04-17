@@ -491,7 +491,24 @@ const AdminPage = () => {
             </div>
           </div>
         )}
-        
+
+        {form && form.restrictByDomain && form.allowedDomains && form.allowedDomains.length > 0 && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4 flex items-center">
+            <div className="mr-3 bg-blue-100 rounded-full p-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="flex-grow">
+              <h3 className="font-medium text-blue-800">Domain Restriction Active</h3>
+              <p className="text-sm text-blue-700">
+                This form can only be submitted by users with the following email domains:
+                <span className="font-medium"> {form.allowedDomains.map(domain => `@${domain}`).join(', ')}</span>
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Response Summary */}
         {getResponseSummary()}
         

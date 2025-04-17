@@ -20,6 +20,11 @@ const CreateForm = () => {
   const [area, setArea] = useState(null);
   const [areaSelected, setAreaSelected] = useState(false);
 
+  // Add domain restriction fields
+  const [restrictByDomain, setRestrictByDomain] = useState(false);
+  const [allowedDomains, setAllowedDomains] = useState([]);
+  const [domainInput, setDomainInput] = useState("");
+
   // Ensure user is logged in
   useEffect(() => {
     if (!auth.currentUser) {
@@ -112,6 +117,35 @@ const CreateForm = () => {
     ));
   };
 
+  // Add domain to the allowed domains list
+  const addDomain = () => {
+    // Basic validation to ensure it looks like a domain
+    if (!domainInput.trim() || !domainInput.includes('.')) {
+      alert("Please enter a valid domain (e.g., example.com)");
+      return;
+    }
+
+    // Clean input - remove @ if present, extract domain only
+    let domain = domainInput.trim();
+    if (domain.startsWith('@')) {
+      domain = domain.substring(1);
+    }
+    
+    // Check if domain already exists in the list
+    if (allowedDomains.includes(domain)) {
+      alert("This domain is already in the list");
+      return;
+    }
+    
+    setAllowedDomains([...allowedDomains, domain]);
+    setDomainInput("");
+  };
+
+  // Remove domain from the allowed domains list
+  const removeDomain = (domainToRemove) => {
+    setAllowedDomains(allowedDomains.filter(domain => domain !== domainToRemove));
+  };
+
   // Handle form submission
   const handleSubmit = async () => {
     if (!auth.currentUser) {
@@ -151,6 +185,12 @@ const CreateForm = () => {
       return;
     }
 
+    // Validate domain restrictions if enabled
+    if (restrictByDomain && allowedDomains.length === 0) {
+      alert("Please add at least one domain or disable domain restriction");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const formId = uuidv4();
@@ -164,6 +204,9 @@ const CreateForm = () => {
         createdAt: new Date(),
         closed: false,
         requiresLocation: defineArea,
+        // Add domain restriction data
+        restrictByDomain: restrictByDomain,
+        allowedDomains: restrictByDomain ? allowedDomains : [],
       };
       
       // Add area data if defined, making sure to serialize properly
@@ -436,6 +479,80 @@ const CreateForm = () => {
                 >
                   {areaSelected ? 'Update Area' : 'Save Area'}
                 </button>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Domain Restriction */}
+        <div className="mb-8 bg-white shadow-md rounded-lg overflow-hidden">
+          <div className="p-6 flex justify-between items-center border-b border-gray-200">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800">Email Domain Restriction</h2>
+              <p className="text-gray-600 text-sm mt-1">
+                {restrictByDomain 
+                  ? "Only users with specific email domains can submit this form" 
+                  : "Allow anyone to submit this form regardless of email domain"}
+              </p>
+            </div>
+            <button 
+              onClick={() => setRestrictByDomain(!restrictByDomain)}
+              className={`${
+                restrictByDomain 
+                  ? 'bg-red-500 hover:bg-red-600'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+              } text-white px-4 py-2 rounded-md shadow-sm transition-all duration-200`}
+            >
+              {!restrictByDomain ? "Add Restriction" : "Remove Restriction"}
+            </button>
+          </div>
+          
+          {restrictByDomain && (
+            <div>
+              <div className="p-4 bg-gray-50 border-b border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex-grow">
+                    <input
+                      type="text"
+                      value={domainInput}
+                      onChange={(e) => setDomainInput(e.target.value)}
+                      placeholder="Enter domain (e.g., example.com)"
+                      className="border border-gray-300 p-2 w-full rounded-md"
+                    />
+                  </div>
+                  <button 
+                    onClick={addDomain}
+                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
+                  >
+                    Add Domain
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Allowed Domains:</h3>
+                {allowedDomains.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {allowedDomains.map((domain, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full"
+                      >
+                        <span>@{domain}</span>
+                        <button 
+                          onClick={() => removeDomain(domain)} 
+                          className="ml-2 text-indigo-600 hover:text-indigo-800"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">No domains added yet. Users must have an email from an allowed domain to submit this form.</p>
+                )}
               </div>
             </div>
           )}
